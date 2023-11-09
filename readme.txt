@@ -9,6 +9,8 @@ Locks when data is changed (context):
 have a lock for each variable in the context
 only allow read-read
 
+
+
 One thread for each tx_queue
 
 To lock a ctx variable within the EP:
@@ -17,6 +19,7 @@ lock->ctx.variable
 Assign a thread for an EP/loop:
 thread(id, count) {}
 Think about how to assign the threads
+
 
 
 
