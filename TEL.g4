@@ -2,6 +2,35 @@ grammar TEL;
 
 // Parser
 
+// Should we create a different rule for variable types and function types?
+// I guess we need to have a void type, but variables shouldn't be able to be void
+function    : type ID '(' (type ID (',' type ID)*)? ')' '{' statement* '}'
+            ;
+
+statement   : (condition|for|foreach|assign ';'|return ';'|varDecl ';'| 'break'  ';')
+            ;
+
+condition   : 'if' '(' assign ')' curlyBrack
+            | 'if' '(' assign ')' curlyBrack 'else' curlyBrack
+            ;
+
+for         : 'for' '(' forArg ')' curlyBrack
+            ;
+
+forArg      : varDecl ';' or ';' assign
+            | assign ';' or ';' assign
+            ;
+
+foreach     : 'foreach' '(' ID 'in' ID ')' curlyBrack
+            ;
+
+curlyBrack  : '{' statement* '}'
+            | statement
+            ;
+
+return      : 'return' assign
+            ;
+
 listDecl    : LIST_T '<' type '>' ID
             ;
 

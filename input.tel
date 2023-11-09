@@ -1,1 +1,8 @@
-int a = b = (b) = (20 == 1 + 3 > !4 == - 2 * 5)
+int main(int a, float b, bool c) {
+    if(a = 32 * 43 && 0) {
+        int a = (20 == 1 + 3 > !4 == - 2 * 5);
+        for(float b = 10; b < 20; b = b + 1)
+            a = b + 1 - 3 || 4;
+        return a;
+    }
+}
