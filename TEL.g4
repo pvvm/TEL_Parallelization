@@ -21,47 +21,47 @@ onlyVarDecl : (type ID ';'|type ID '=' (INT|FLOAT) ';')*
 eventProc   : 'void' ID '(' (type ID (',' type ID)*)? ')' '{' statement* '}'
             ;
 
-statement   : (condition|for|foreach|assign ';'|return ';'|varDecl ';'| 'break'  ';')
+statement   : (condition|forCommon|forEach|assign ';'|returnTEL ';'|varDecl ';'| 'break'  ';')
             ;
 
 condition   : 'if' '(' assign ')' curlyBrack
             | 'if' '(' assign ')' curlyBrack 'else' curlyBrack
             ;
 
-for         : 'for' '(' forArg ')' curlyBrack
+forCommon   : 'for' '(' forArg ')' curlyBrack
             ;
 
-forArg      : varDecl ';' or ';' assign
-            | assign ';' or ';' assign
+forArg      : varDecl ';' orTEL ';' assign
+            | assign ';' orTEL ';' assign
             ;
 
-foreach     : 'foreach' '(' ID 'in' ID ')' curlyBrack
+forEach     : 'foreach' '(' ID 'in' ID ')' curlyBrack
             ;
 
 curlyBrack  : '{' statement* '}'
             | statement
             ;
 
-return      : 'return' assign
+returnTEL   : 'return' assign
             ;
 
 listDecl    : LIST_T '<' type '>' ID
             ;
 
-varDecl     : type ID ('=' or)*
+varDecl     : type ID ('=' orTEL)*
             ;
 
 type        : (INT_T|FLOAT_T|BOOL_T|STREAM_T|EVENT_T|PACKET_T|QUEUE_T|ID)
             ;
 
-assign      : ID ('=' or)*
-            | or
+assign      : ID ('=' orTEL)*
+            | orTEL
             ;
 
-or          : and ('||' and)*
+orTEL       : andTEL ('||' andTEL)*
             ;
 
-and         : comparison ('&&' comparison)*
+andTEL         : comparison ('&&' comparison)*
             ;
 
 comparison  : relational (('=='|'!=') relational)*
@@ -76,13 +76,16 @@ mathLow     : mathHigh (('+'|'-') mathHigh)*
 mathHigh    : unary (('*'|'/') unary)*
             ;
 
-unary       : ('-'|'!')? symbol
-            | '(' assign ')'
+unary       : (('-'|'!')? symbol| ('type'|'bytes')? '(' assign ')')
             ;
 
-symbol      : ID
-            | INT
-            | FLOAT
+symbol      : (identifier|INT|FLOAT|FALSE|TRUE|'new_pkt' '(' ')')
+            ;
+
+identifier  : ID ('.' ID|'.' builtFunc '(' (assign)? ')'|'[' orTEL (':' orTEL)* ']')*
+            ;
+
+builtFunc   : ('add'|'remove'|'add_hdr'|'get_hdr' '<' ID '>'|'add_data'|'get_data'|'push'|'pop'|'len')
             ;
 
 // Lexer
@@ -100,7 +103,9 @@ LIST_T      : 'list' ;
 
 INT         : [0-9]+ ;
 FLOAT       : [0-9]*'.'[0-9]+ ;
+FALSE       : 'false' ;
+TRUE        : 'true' ;
 
 ID          : [a-zA-Z][_a-zA-Z0-9]* ;
 
-NEWLINE     : [ \r\n]+ -> skip;
+NEWLINE     : [ \r\n\t]+ -> skip;
