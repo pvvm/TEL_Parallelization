@@ -1,8 +1,28 @@
-int main(int a, float b, bool c) {
+event test {
+    int a;
+    int b;
+}
+
+void main(int a, float b, bool c) {
     if(a = 32 * 43 && 0) {
         int a = (20 == 1 + 3 > !4 == - 2 * 5);
         for(float b = 10; b < 20; b = b + 1)
             a = b + 1 - 3 || 4;
         return a;
     }
+}
+
+context ctx {
+    float dfdf;
+    int dksl;
+}
+
+void testing() {
+    foreach(element in listttt) {
+        int fdfid = 12 + 43 * (4 + 3);
+    }
+}
+
+dispatch table {
+    test -> {main, testing};
 }

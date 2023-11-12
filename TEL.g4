@@ -2,9 +2,23 @@ grammar TEL;
 
 // Parser
 
-// Should we create a different rule for variable types and function types?
-// I guess we need to have a void type, but variables shouldn't be able to be void
-function    : type ID '(' (type ID (',' type ID)*)? ')' '{' statement* '}'
+initial     : (structLike|eventProc|dispatcher)*
+            ;
+
+dispatcher  : 'dispatch' ID '{' dispEPs '}'
+            ;
+
+dispEPs     : ((ID|(ID '::' ID)) '->' '{' ID (',' ID)* '}' ';')*
+            ;
+
+structLike : ('context'|'struct'|'interm_output'|'event'|'header') ID '{' onlyVarDecl '}'
+            | 'event' ID ':' ID '{' onlyVarDecl '}'
+            ;
+
+onlyVarDecl : (type ID ';'|type ID '=' (INT|FLOAT) ';')*
+            ;
+
+eventProc   : 'void' ID '(' (type ID (',' type ID)*)? ')' '{' statement* '}'
             ;
 
 statement   : (condition|for|foreach|assign ';'|return ';'|varDecl ';'| 'break'  ';')
