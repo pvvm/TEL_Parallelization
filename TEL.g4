@@ -15,7 +15,7 @@ structLike : ('context'|'struct'|'interm_output'|'event'|'header') ID '{' onlyVa
             | 'event' ID ':' ID '{' onlyVarDecl '}'
             ;
 
-onlyVarDecl : (type ID ';'|type ID '=' (INT|FLOAT) ';')*
+onlyVarDecl : (type ID ';'|type ID '=' (INT|FLOAT) ';'|LIST_T '<' type '>' ID ';')*
             ;
 
 eventProc   : 'void' ID '(' (type ID (',' type ID)*)? ')' '{' statement* '}'
@@ -31,11 +31,10 @@ condition   : 'if' '(' assign ')' curlyBrack
 forCommon   : 'for' '(' forArg ')' curlyBrack
             ;
 
-forArg      : varDecl ';' orTEL ';' assign
-            | assign ';' orTEL ';' assign
+forArg      : (varDecl|assign)? ';' orTEL ';' assign
             ;
 
-forEach     : 'foreach' '(' ID 'in' ID ')' curlyBrack
+forEach     : 'foreach' '(' identifier 'in' identifier ')' curlyBrack
             ;
 
 curlyBrack  : '{' statement* '}'
@@ -45,16 +44,14 @@ curlyBrack  : '{' statement* '}'
 returnTEL   : 'return' assign
             ;
 
-listDecl    : LIST_T '<' type '>' ID
-            ;
-
 varDecl     : type ID ('=' orTEL)*
+            | LIST_T '<' type '>' ID
             ;
 
 type        : (INT_T|FLOAT_T|BOOL_T|STREAM_T|EVENT_T|PACKET_T|QUEUE_T|ID)
             ;
 
-assign      : ID ('=' orTEL)*
+assign      : identifier ('=' orTEL)*
             | orTEL
             ;
 
@@ -109,3 +106,4 @@ TRUE        : 'true' ;
 ID          : [a-zA-Z][_a-zA-Z0-9]* ;
 
 NEWLINE     : [ \r\n\t]+ -> skip;
+COMMENT     : '//' ~[\r\n]* -> skip;   
