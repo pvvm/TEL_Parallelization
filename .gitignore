@@ -1,0 +1,5 @@
+build/*
+grammar/*
+compiler
+.vscode
+.antlr
