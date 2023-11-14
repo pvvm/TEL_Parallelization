@@ -8,7 +8,8 @@ initial     : (structLike|eventProc|dispatcher)*
 dispatcher  : 'dispatch' ID '{' dispEPs '}'
             ;
 
-dispEPs     : ((ID|(ID '::' ID)) '->' '{' ID (',' ID)* '}' ';')*
+dispEPs     : ((ID|(ID '::' ID)) '->' '{' ID (',' ID)* '}' ';') dispEPs
+            |
             ;
 
 structLike : ('context'|'struct'|'interm_output'|'event'|'header') ID '{' onlyVarDecl '}'
@@ -51,14 +52,14 @@ varDecl     : type ID ('=' orTEL)*
 type        : (INT_T|FLOAT_T|BOOL_T|STREAM_T|EVENT_T|PACKET_T|QUEUE_T|ID)
             ;
 
-assign      : identifier ('=' orTEL)*
+assign      : identifier '=' orTEL
             | orTEL
             ;
 
 orTEL       : andTEL ('||' andTEL)*
             ;
 
-andTEL         : comparison ('&&' comparison)*
+andTEL      : comparison ('&&' comparison)*
             ;
 
 comparison  : relational (('=='|'!=') relational)*
