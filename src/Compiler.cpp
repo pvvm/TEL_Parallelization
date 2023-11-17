@@ -24,6 +24,11 @@ Compiler::Compiler(string filename)
     // Print the token stream.
     TELParser parser(&tokens);
     TELTreeVisitor visitor;
+    // Creates the new file to write code on
+    filename = filename.substr(0, filename.find(".") + 1) + "ir";
+    cout << filename;
+    ofstream out;
+    out.open(filename);
     visitor.visit(parser.initial());
 }
 

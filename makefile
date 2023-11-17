@@ -16,16 +16,16 @@ $(BUILD_DIR):
 	mkdir $(BUILD_DIR)
 
 compiler: main.cpp $(OBJECTS)
-	g++ main.cpp $(OBJECTS) $(C_FLAGS) -o compiler
+	g++ main.cpp $(OBJECTS) $(C_FLAGS) -o compiler --std=c++17
 
 $(BUILD_DIR)/parser.o: $(GRAMMAR_DIR)/TELParser.cpp $(GRAMMAR_DIR)/TELParser.h
-	g++ -c $(GRAMMAR_DIR)/TELParser.cpp  $(C_FLAGS) -o $(BUILD_DIR)/parser.o
+	g++ -c $(GRAMMAR_DIR)/TELParser.cpp  $(C_FLAGS) -o $(BUILD_DIR)/parser.o --std=c++17
 
 $(BUILD_DIR)/lexer.o: $(GRAMMAR_DIR)/TELLexer.cpp $(GRAMMAR_DIR)/TELLexer.h
-	g++ -c $(GRAMMAR_DIR)/TELLexer.cpp  $(C_FLAGS) -o $(BUILD_DIR)/lexer.o
+	g++ -c $(GRAMMAR_DIR)/TELLexer.cpp  $(C_FLAGS) -o $(BUILD_DIR)/lexer.o --std=c++17
 
 $(BUILD_DIR)/compiler.o: $(SRC_DIR)/Compiler.cpp $(HEADER_DIR)/Compiler.h $(GRAMMAR_DIR)/TELLexer.h $(GRAMMAR_DIR)/TELParser.h $(HEADER_DIR)/TELTreeVisitor.h
-	g++ -c $(SRC_DIR)/Compiler.cpp  $(C_FLAGS) -o $(BUILD_DIR)/compiler.o
+	g++ -c $(SRC_DIR)/Compiler.cpp  $(C_FLAGS) -o $(BUILD_DIR)/compiler.o --std=c++17
 
 $(GRAMMAR_DIR)/TELLexer.cpp: TEL.g4
 	java -jar antlr-4.13.1-complete.jar -Dlanguage=Cpp -no-listener -visitor -o $(GRAMMAR_DIR) TEL.g4
