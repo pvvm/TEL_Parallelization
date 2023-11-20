@@ -18,130 +18,157 @@ public:
 
 	virtual std::any visitInitial(TELParser::InitialContext *ctx) override {
 		//std::cout<<ctx->toStringTree()<<std::endl;
-		return visitChildren(ctx);
+		//writeChild(ctx);
+		writeChild(ctx, true);
+		return 0;
 	}
 
 	virtual std::any visitDispatcher(TELParser::DispatcherContext *ctx) override {
 		//std::cout<<ctx->toString();
-		return visitChildren(ctx);
+		writeChild(ctx, true);
+		return 0;
 	}
 
 	virtual std::any visitDispEPs(TELParser::DispEPsContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, true);
+		return 0;
 	}
 
 	virtual std::any visitStructLike(TELParser::StructLikeContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, true);
+		return 0;
 	}
 
 	virtual std::any visitOnlyVarDecl(TELParser::OnlyVarDeclContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, true);
+		return 0;
 	}
 
 	virtual std::any visitEventProc(TELParser::EventProcContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, true);
+		return 0;
 	}
 
 	virtual std::any visitStatement(TELParser::StatementContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, true);
+		return 0;
 	}
 
 	virtual std::any visitCondition(TELParser::ConditionContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitForCommon(TELParser::ForCommonContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitForArg(TELParser::ForArgContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitForEach(TELParser::ForEachContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitCurlyBrack(TELParser::CurlyBrackContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitReturnTEL(TELParser::ReturnTELContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitVarDecl(TELParser::VarDeclContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitType(TELParser::TypeContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitAssign(TELParser::AssignContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitOrTEL(TELParser::OrTELContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitAndTEL(TELParser::AndTELContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitComparison(TELParser::ComparisonContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitRelational(TELParser::RelationalContext *ctx) override {
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitMathLow(TELParser::MathLowContext *ctx) override {
-		writeChild(ctx);
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitMathHigh(TELParser::MathHighContext *ctx) override {
-		writeChild(ctx);
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitUnary(TELParser::UnaryContext *ctx) override {
-		writeChild(ctx);
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitSymbol(TELParser::SymbolContext *ctx) override {
-		writeChild(ctx);
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitIdentifier(TELParser::IdentifierContext *ctx) override {
 		//std::cout<<ctx->children[0]->getText()<<std::endl;
-		writeChild(ctx);
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
 	virtual std::any visitBuiltFunc(TELParser::BuiltFuncContext *ctx) override {
 		//for(int i = 0; i < ctx->children.size(); i++) {
-		//	std::cout<<ctx->children[i]->getText()<<std::endl;
+		//	outputFile << ctx->children[i]->getText() + "\n";
 		//}
-		writeChild(ctx);
-		return visitChildren(ctx);
+		writeChild(ctx, false);
+		return 0;
 	}
 
-	template <class T> void writeChild(T *ctx) {
-		bool wrote = false;
+	template <class T> void writeChild(T *ctx, bool newLine) {
+		std::string token;
 		for(int i = 0; i < ctx->children.size(); i++) {
-			if (ctx->children[i]->children.size() == 0) {
-				outputFile << ctx->children[i]->getText();
-				wrote = true;
+			token = ctx->children[i]->getText();
+			if (ctx->children[i]->children.size() > 0)
+				visit(ctx->children[i]);
+			else {
+				if (token == "{" || token == "}" || token == ";") {
+					outputFile << token + "\n";
+				}
+				else
+					outputFile << token + " ";
 			}
 		}
-		if(wrote)
-			outputFile << "\n";
+		//if(newLine)
+		//	outputFile << std::endl;
 	}
 
 };
