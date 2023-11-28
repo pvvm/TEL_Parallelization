@@ -8,7 +8,7 @@ initial     : (structLike|eventProc|dispatcher)*
 dispatcher  : 'dispatch' ID '{' dispEPs '}'
             ;
 
-dispEPs     : ((ID|(ID '::' ID)) '->' '{' ID (',' ID)* '}' ';') dispEPs
+dispEPs     : ((ID|(ID '::' ID)) '->' '{' ID (',' ID)* '}' ';')*
             |
             ;
 

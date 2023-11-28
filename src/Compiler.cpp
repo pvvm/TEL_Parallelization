@@ -6,6 +6,7 @@
 #include "../grammar/TELParser.h"
 #include "../include/Compiler.h"
 #include "../include/TELTreeVisitor.h"
+#include "../include/TELGeneratorVisitor.h"
 
 using namespace antlrcpp;
 using namespace antlr4;
@@ -26,10 +27,10 @@ Compiler::Compiler(string filename)
     TELTreeVisitor visitor;
     // Creates the new file to write code on
     filename = filename.substr(0, filename.find(".") + 1) + "ir";
-    cout << filename;
-    ofstream out;
-    out.open(filename);
-    visitor.visit(parser.initial());
+    //visitor.visit(parser.initial());
+    TELGeneratorVisitor generator;
+    generator.outputFile.open(filename, ofstream::trunc);
+    generator.visit(parser.initial());
 }
 
 Compiler::~Compiler()
