@@ -27,10 +27,12 @@ Compiler::Compiler(string filename)
     TELTreeVisitor visitor;
     // Creates the new file to write code on
     filename = filename.substr(0, filename.find(".") + 1) + "ir";
-    //visitor.visit(parser.initial());
-    TELGeneratorVisitor generator;
-    generator.outputFile.open(filename, ofstream::trunc);
-    generator.visit(parser.initial());
+    visitor.visit(parser.initial());
+    visitor.printTree();
+    visitor.getLocks();
+    // TELGeneratorVisitor generator;
+    // generator.outputFile.open(filename, ofstream::trunc);
+    // generator.visit(parser.initial());
 }
 
 Compiler::~Compiler()
