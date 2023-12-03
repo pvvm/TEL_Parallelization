@@ -58,6 +58,8 @@ void SendProcessor(SEND this_event , myContext ctx){
 	return output ; 
 	} 
 void ACKProcessor(ACK this_event , myContext ctx){ 
+	lock SRTT;
+	lock RTTVAR;
 	if(! ctx.timeouthappened && ctx.m_Una < this_event.acknum ){ 
 		float R = now - ctx.startTime[this_event.acknum ]; 
 		if(ctx.SRTT == 0 ){ 
@@ -70,12 +72,13 @@ void ACKProcessor(ACK this_event , myContext ctx){
 			float beta = 1.0 / 4.0 ; 
 			ctx.RTTVAR = (1 - beta )* ctx.RTTVAR + beta * ctx.SRTT - R ; 
 			ctx.SRTT = (1 - alpha )* ctx.SRTT + alpha * R ; 
+			unlock SRTT;
 			ctx.RTO = ctx.SRTT + 4 * ctx.RTTVAR ; 
 			} 
 		if(ctx.RTO < 1 ){ 
 			ctx.RTO = 1 ; 
 			} 
-		} 
+		}
 	if(ctx.m_Una < this_event.acknum ){ 
 		ctx.m_Wnd = ctx.m_Wnd + ctx.m_segmentsize ; 
 		ctx.m_Una = this_event.acknum ; 
