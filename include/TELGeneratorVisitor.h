@@ -19,10 +19,8 @@ private:
 
 	std::string writeAndIndentation(std::string token, std::string nextToken, std::string indentation) {
 		std::string symbols = ".()[]";
-		if(nextToken != "" && (symbols.find(nextToken) < symbols.length()) || (symbols.find(token) < symbols.length())) {
+		if(nextToken != "" && (symbols.find(nextToken) < symbols.length()) || (symbols.find(token) < symbols.length()))
 			outputFile << token;
-			std::cout << token + " "+ nextToken << std::endl;
-		}
 		else
 			outputFile << token + " ";
 
@@ -197,7 +195,9 @@ public:
 
 	virtual std::any visitIdentifier(TELParser::IdentifierContext *ctx) override {
 		//std::cout<<ctx->children[0]->getText()<<std::endl;
+		//writelock()
 		writeChild(ctx);
+		//writeunlock()
 		return 0;
 	}
 
