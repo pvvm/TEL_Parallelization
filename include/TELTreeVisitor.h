@@ -9,6 +9,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <set>
 #include <string>
 #include "utils.h"
 
@@ -17,8 +18,9 @@
 
 class  TELTreeVisitor : public TELVisitor {
 private:
-  std::map<std::string,std::vector<std::string>> lockMap;
+  std::map<std::string,std::set<std::string>> lockMap;
   std::map<std::string,std::map<std::string,graph*> >usageTree;
+  std::map<std::string, graph*>EPTree;
   std::string currProcess;
   bool inProcess = false;
   bool checkForLock = false;
@@ -33,21 +35,15 @@ public:
     return usageTree;
   }
   void printTree(){
-    for(auto processTree: usageTree){
+    for(auto processTree: EPTree){
       std::cout << "*************************" <<processTree.first<< std::endl;
-    for(auto tree: processTree.second){
-      std::cout << "**********" <<tree.first<< std::endl;
-      tree.second->print();
-    }
+      processTree.second->print();
     }
   }
   void getLocks(){
-    for(auto processTree: usageTree){
+    for(auto processTree: EPTree){
       std::cout << "*************************" <<processTree.first<< std::endl;
-    for(auto tree: processTree.second){
-      std::cout << "**********" <<tree.first<< std::endl;
-      tree.second->getLocks();
-    }
+      processTree.second->getLocks(lockMap[processTree.first]);
   }
   }
   // virtual std::any visitChildren(TELParser::InitialContext *ctx){
@@ -86,6 +82,7 @@ public:
   virtual std::any visitEventProc(TELParser::EventProcContext *ctx) override {
     inProcess = true;
     currProcess = ctx->ID(0)->toString();
+    EPTree[currProcess] = new graph();
     std::any out = visitChildren(ctx);
     inProcess = false;
     counter++;
@@ -98,39 +95,24 @@ public:
   }
 
   virtual std::any visitCondition(TELParser::ConditionContext *ctx) override {
-    std::cout<<ctx->children.size()<<std::endl;
     std::any out = visit(ctx->children[2]);
-    std::map<std::string,node*> start;
-    std::map<std::string,node*> end;
-    node* temp;
+    node* branchStart;
+    node* branchEnd;
 
-    for(std::string var: lockMap[currProcess]){
-      start[var] = usageTree[currProcess][var]->curr;
-      usageTree[currProcess][var]->addChild(new node);
-    }
+    branchStart = EPTree[currProcess]->curr;
+    EPTree[currProcess]->addChild(new node);
+
     visit(ctx->children[4]);
-    for(std::string var: lockMap[currProcess]){
-        end[var] = new node;
-        temp = usageTree[currProcess][var]->curr;
-        usageTree[currProcess][var]->addChild(end[var]);
-        if(start.count(var)>0){
-          usageTree[currProcess][var]->curr=start[var];
-        }
-        else{
-          usageTree[currProcess][var]->curr = usageTree[currProcess][var]->start;
-          usageTree[currProcess][var]->addParent(new node);
-        }
-    }
+
+    branchEnd = new node;
+    EPTree[currProcess]->addChild(branchEnd);
+    EPTree[currProcess]->curr=branchStart;
+    
     if(ctx->children.size()==7){
-      for(std::string var: lockMap[currProcess]){
-          usageTree[currProcess][var]->addChild(new node);
-      }
+      EPTree[currProcess]->addChild(new node);
       visit(ctx->children[6]);
     }
-    for(std::string var: lockMap[currProcess]){
-      if(end.count(var)>0)
-        usageTree[currProcess][var]->addChild(end[var]);
-    }
+    EPTree[currProcess]->addChild(branchEnd);
     counter++;
     return out;
   }
@@ -221,12 +203,14 @@ public:
   virtual std::any visitIdentifier(TELParser::IdentifierContext *ctx) override {
     if(inProcess && checkForLock){
       if(ctx->ID(0)->toString()=="ctx"){
-        if(usageTree[currProcess].count(ctx->ID(1)->toString())==0){
-          lockMap[currProcess].push_back(ctx->ID(1)->toString());
-          usageTree[currProcess][ctx->ID(1)->toString()] = new graph();
-        }
-        usageTree[currProcess][ctx->ID(1)->toString()]->add(counter);
-        std::cout<<currProcess<<": "<<ctx->ID(1)->toString()<<std::endl;
+        EPTree[currProcess]->add(ctx->ID(1)->toString(),counter);
+        lockMap[currProcess].insert(ctx->ID(1)->toString());
+        // if(usageTree[currProcess].count(ctx->ID(1)->toString())==0){
+        //   lockMap[currProcess].push_back(ctx->ID(1)->toString());
+        //   usageTree[currProcess][ctx->ID(1)->toString()] = new graph();
+        // }
+        // usageTree[currProcess][ctx->ID(1)->toString()]->add(counter);
+        // std::cout<<currProcess<<": "<<ctx->ID(1)->toString()<<std::endl;
       }
       checkForLock =false;
     }
