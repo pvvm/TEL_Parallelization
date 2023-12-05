@@ -83,7 +83,7 @@ struct graph
     visited[a->id]=true;
     if(a->variableLocation.count(var)>0){
       locks.push_back(a->variableLocation[var]);
-      nodesId.push_back(a->id);
+      nodesId.push_back(a->variableLocation[var]);
       std::cout<<"unlock added at: "<<a->id<<std::endl;
       return;
     }

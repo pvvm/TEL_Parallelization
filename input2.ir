@@ -66,40 +66,40 @@ void ACKProcessor(ACK this_event , myContext ctx){ 0
 			if(R == 35 ){ 3
 				ctx.SRTT = 5 ; 3
 				} 3
-			else if(R == 10 ){ 5
+			else { 5
 				ctx.SRTT = 10 ; 5
 				} 5
-			ctx.RTO = ctx.SRTT + 4 * ctx.RTTVAR ; 7
-			} 7
-		else if(R > 50 ){ 9
-			ctx.RTO = 5 ; 9
-			ctx.SRTT = 50 ; 9
-			} 9
-		else { 11
-			float alpha = 1.0 / 8.0 ; 11
-			float beta = 1.0 / 4.0 ; 11
-			ctx.RTTVAR = (1 - beta )* ctx.RTTVAR + beta * ctx.SRTT - R ; 11
-			ctx.SRTT = (1 - alpha )* ctx.SRTT + alpha * R ; 11
-			ctx.RTO = ctx.SRTT + 4 * ctx.RTTVAR ; 11
-			} 11
-		ctx.sei_la = 10 ; 13
-		if(ctx.RTO < 1 ){ 14
-			ctx.RTO = 1 ; 14
-			} 14
-		ctx.testing = 12 ; 15
-		} 15
-	ctx.testandoooo = 1 ; 16
-	if(ctx.m_Una < this_event.acknum ){ 17
-		ctx.m_Wnd = ctx.m_Wnd + ctx.m_segmentsize ; 17
-		ctx.m_Una = this_event.acknum ; 17
-		ctx.timeouthappened = false ; 17
-		ACK new_event ; 17
-		new_event.time_event = 0 ; 17
-		new_event.flow_id = this_event.flow_id ; 17
-		output.event_list.add (new_event ); 17
-		} 17
-	return output ; 18
-	} 18
+			ctx.RTO = ctx.SRTT + 4 * ctx.RTTVAR ; 6
+			} 6
+		else if(R > 50 ){ 8
+			ctx.RTO = 5 ; 8
+			ctx.SRTT = 50 ; 8
+			} 8
+		else { 10
+			float alpha = 1.0 / 8.0 ; 10
+			float beta = 1.0 / 4.0 ; 10
+			ctx.RTTVAR = (1 - beta )* ctx.RTTVAR + beta * ctx.SRTT - R ; 10
+			ctx.SRTT = (1 - alpha )* ctx.SRTT + alpha * R ; 10
+			ctx.RTO = ctx.SRTT + 4 * ctx.RTTVAR ; 10
+			} 10
+		ctx.sei_la = 10 ; 12
+		if(ctx.RTO < 1 ){ 13
+			ctx.RTO = 1 ; 13
+			} 13
+		ctx.testing = 12 ; 14
+		} 14
+	ctx.testandoooo = 1 ; 15
+	if(ctx.m_Una < this_event.acknum ){ 16
+		ctx.m_Wnd = ctx.m_Wnd + ctx.m_segmentsize ; 16
+		ctx.m_Una = this_event.acknum ; 16
+		ctx.timeouthappened = false ; 16
+		ACK new_event ; 16
+		new_event.time_event = 0 ; 16
+		new_event.flow_id = this_event.flow_id ; 16
+		output.event_list.add (new_event ); 16
+		} 16
+	return output ; 17
+	} 17
 void TIMERProcessor(TIMER this_event , myContext ctx){ 0
 	proc_out_t output ; 0
 	ctx.timeouthappened = true ; 0

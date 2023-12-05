@@ -202,6 +202,7 @@ public:
     if(inProcess && checkForLock){
       if(ctx->ID(0)->toString()=="ctx"){
         EPTree[currProcess]->add(ctx->ID(1)->toString(),counter);
+        std::cout << "visitor" <<ctx->ID(1)->toString() << counter << std::endl;
         lockMap[currProcess].insert(ctx->ID(1)->toString());
       }
       checkForLock =false;

@@ -31,17 +31,10 @@ Compiler::Compiler(string filename)
     visitor.printTree();
     std::map<std::string, std::map<std::string, std::vector<int>>> nodesLock;
     nodesLock = visitor.getLocks();
-    for(auto var: nodesLock) {
-      std::cout << "EP names:" << var.first << std::endl;
-      for(auto nodeId: var.second) {
-        std::cout << "Var names:" << nodeId.first << std::endl;
-        for(auto nodeNum: nodeId.second) {
-          std::cout << "Node numbers:" << nodeNum << std::endl;
-        }
-      }
-    }
+
     parser.reset();
     TELGeneratorVisitor generator;
+    generator.EPUnlockLocations = nodesLock;
     generator.outputFile.open(filename, ofstream::trunc);
     generator.visit(parser.initial());
 }
