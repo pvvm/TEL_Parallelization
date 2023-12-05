@@ -63,33 +63,32 @@ struct graph
     }
   }
 
-
-
-
-  std::map<std::string,std::vector<int>> getLocks(std::set<std::string> vars){
+  std::map<std::string,std::vector<int>> getLocks(std::set<std::string> vars, std::map<std::string, std::vector<int>>&nodesId){
       std::map<std::string,std::vector<int>> lockMap;
         for(auto var: vars){
           std::cout<<"curr variable: "<<var<<std::endl;
           std::vector<bool> visited(id,false);
           std::vector<int> locks;
-          getLocks(curr,visited,locks,var);
+          getLocks(curr,visited,locks,var, nodesId[var]);
+          std::sort(nodesId[var].begin(), nodesId[var].end());
           lockMap[var]=locks;
         }
         return lockMap;
     }
 
-  void getLocks(node* a,std::vector<bool> &visited,std::vector<int>&locks,std::string var){
+  void getLocks(node* a,std::vector<bool> &visited,std::vector<int>&locks,std::string var, std::vector<int>&nodesId){
     if(visited[a->id]){
       return;
     }
     visited[a->id]=true;
     if(a->variableLocation.count(var)>0){
       locks.push_back(a->variableLocation[var]);
+      nodesId.push_back(a->id);
       std::cout<<"unlock added at: "<<a->id<<std::endl;
       return;
     }
     for(auto parent: a->parents){
-        getLocks(parent,visited,locks,var);
+        getLocks(parent,visited,locks,var, nodesId);
       }
     }
 };

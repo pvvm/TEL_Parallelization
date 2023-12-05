@@ -16,12 +16,13 @@ class  TELGeneratorVisitor : public TELVisitor {
 private:
 	int indentationCounter = 0;
 	bool inDispatch = false;
+	int counter = 0;
 
 	std::string writeAndIndentation(std::string token, std::string nextToken, std::string indentation) {
 		std::string symbols = ".()[]";
 		if(nextToken != "" && (symbols.find(nextToken) < symbols.length()) || (symbols.find(token) < symbols.length())) {
 			outputFile << token;
-			std::cout << token + " "+ nextToken << std::endl;
+			//std::cout << token + " "+ nextToken << std::endl;
 		}
 		else
 			outputFile << token + " ";
@@ -36,7 +37,7 @@ private:
 		}
 
 		if(!inDispatch && token == "{" || token == "}" || token == ";") {
-			outputFile << "\n" + indentation;
+			outputFile <<  counter << "\n" + indentation;
 		}
 		return indentation;
 	}
@@ -98,6 +99,7 @@ public:
 
 	virtual std::any visitEventProc(TELParser::EventProcContext *ctx) override {
 		//indentationCounter++;
+		counter = 0;
 		writeChild(ctx);
 		//indentationCounter--;
 		return 0;
@@ -109,7 +111,13 @@ public:
 	}
 
 	virtual std::any visitCondition(TELParser::ConditionContext *ctx) override {
+		if(ctx->children.size() == 5)
+			std::cout << "if comum" << std::endl;
+		else if(ctx->children.size() == 7)
+			std::cout << "if else" << std::endl;
+		counter++;
 		writeChild(ctx);
+		counter++;
 		return 0;
 	}
 

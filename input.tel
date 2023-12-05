@@ -71,26 +71,47 @@ void SendProcessor(SEND this_event, myContext ctx) {
 }
 
 void ACKProcessor(ACK this_event, myContext ctx) {
+    // 0
     if(!ctx.timeouthappened && ctx.m_Una < this_event.acknum) {
+        // 1
         //float now = time();
         float R = now - ctx.startTime[this_event.acknum];
         if (ctx.SRTT == 0) {
+            // 2
             ctx.SRTT = R;
             ctx.RTTVAR = R/2;
+            if(R = 5) {
+                // 3
+                ctx.SRTT = 5;
+            } else {
+                ctx.SRTT = 10;
+            }
+            // 4
             ctx.RTO = ctx.SRTT + 4 * ctx.RTTVAR;
-        } else {
+        } // 6
+        else if(R > 50) {
+            // 7
+            ctx.RTO = 5;
+            ctx.SRTT = 50;
+        } // 8
+        else {
+            // 9
             float alpha = 1.0 / 8.0;
             float beta = 1.0 / 4.0;
             ctx.RTTVAR  = (1 - beta) * ctx.RTTVAR + beta * ctx.SRTT - R;
             ctx.SRTT = (1 - alpha) * ctx.SRTT + alpha * R;
             ctx.RTO = ctx.SRTT + 4 * ctx.RTTVAR;
         }
+        // 5
         if (ctx.RTO < 1) {
+            // 10
             ctx.RTO = 1;
         }
+        // 11
     }
-
+    // 12
     if (ctx.m_Una < this_event.acknum) {
+        // 13
         ctx.m_Wnd = ctx.m_Wnd + ctx.m_segmentsize;
         ctx.m_Una = this_event.acknum;
         //timer.restart();
@@ -100,6 +121,7 @@ void ACKProcessor(ACK this_event, myContext ctx) {
         new_event.flow_id = this_event.flow_id;
         output.event_list.add(new_event);
     }
+    // 14
     return output;
 }
 

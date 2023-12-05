@@ -40,11 +40,14 @@ public:
       processTree.second->print();
     }
   }
-  void getLocks(){
+
+  std::map<std::string, std::map<std::string, std::vector<int>>> getLocks(){
+    std::map<std::string, std::map<std::string, std::vector<int>>> nodesLock;
     for(auto processTree: EPTree){
       std::cout << "*************************" <<processTree.first<< std::endl;
-      processTree.second->getLocks(lockMap[processTree.first]);
-  }
+      processTree.second->getLocks(lockMap[processTree.first], nodesLock[processTree.first]);
+    }
+    return nodesLock;
   }
 
   virtual std::any visitInitial(TELParser::InitialContext *ctx) override {
