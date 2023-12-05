@@ -46,18 +46,13 @@ public:
       processTree.second->getLocks(lockMap[processTree.first]);
   }
   }
-  // virtual std::any visitChildren(TELParser::InitialContext *ctx){
-
-  // }
 
   virtual std::any visitInitial(TELParser::InitialContext *ctx) override {
-    //std::cout<< "initial"<<std::endl;
     counter++;
     return visitChildren(ctx);
   }
 
   virtual std::any visitDispatcher(TELParser::DispatcherContext *ctx) override {
-    //std::cout<< "Dispatcher"<<std::endl;
     counter++;
     return visitChildren(ctx);
   }
@@ -205,12 +200,6 @@ public:
       if(ctx->ID(0)->toString()=="ctx"){
         EPTree[currProcess]->add(ctx->ID(1)->toString(),counter);
         lockMap[currProcess].insert(ctx->ID(1)->toString());
-        // if(usageTree[currProcess].count(ctx->ID(1)->toString())==0){
-        //   lockMap[currProcess].push_back(ctx->ID(1)->toString());
-        //   usageTree[currProcess][ctx->ID(1)->toString()] = new graph();
-        // }
-        // usageTree[currProcess][ctx->ID(1)->toString()]->add(counter);
-        // std::cout<<currProcess<<": "<<ctx->ID(1)->toString()<<std::endl;
       }
       checkForLock =false;
     }
