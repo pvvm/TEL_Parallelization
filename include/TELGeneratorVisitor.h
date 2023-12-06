@@ -20,8 +20,11 @@ private:
 	int tokenCounter = 0;
 	bool previousTokenElse = false;
 	bool inProcess = false;
+	int inLoopCounter = 0;
 	bool checkForLock = false;
+	bool firstStatementEP = false;
 	std::string currentEPName = "";
+	std::vector<std::string> unlockVars;
 
 	std::string writeAndIndentation(std::string token, std::string nextToken, std::string indentation) {
 		std::string symbols = ".()[]";
@@ -41,7 +44,7 @@ private:
 				indentation.erase(indentation.end() - 1);
 		}
 		
-		if(token == "else") {
+		/*if(token == "else") {
 			nodeCounter++;
 			previousTokenElse = true;
 		} else if(previousTokenElse && token == "{") {
@@ -49,10 +52,10 @@ private:
 			previousTokenElse = false;
 		} else {
 			previousTokenElse = false;
-		}
+		}*/
 
 		if(!inDispatch && token == "{" || token == "}" || token == ";") {
-			outputFile <<  nodeCounter << "\n" + indentation;
+			outputFile << "\n" + indentation;
 		}
 		return indentation;
 	}
@@ -125,6 +128,7 @@ public:
 		//indentationCounter++;
 		currentEPName = ctx->ID(0)->toString();
 		inProcess = true;
+		firstStatementEP = true;
 		nodeCounter = 0;
 		tokenCounter++;
 		writeChild(ctx);
@@ -136,7 +140,26 @@ public:
 
 	virtual std::any visitStatement(TELParser::StatementContext *ctx) override {
 		tokenCounter++;
+		if(firstStatementEP) {
+			std::string indentation;
+			for(int i = 0; i < indentationCounter; i++)
+				indentation += "\t";
+			for(auto EPName: EPUnlockLocations[currentEPName]) {
+				outputFile << "lock(" << EPName.first << ");\n" << indentation;
+			}
+		}
+		firstStatementEP = false;
 		writeChild(ctx);
+
+		std::string indentation;
+		for(int i = 0; i < indentationCounter; i++)
+			indentation += "\t";
+		if(inLoopCounter == 0) {
+			while(unlockVars.size() > 0) {
+				outputFile << "unlock(" << unlockVars.back() << ");\n" << indentation;
+				unlockVars.pop_back();
+			}
+		}
 		return 0;
 	}
 
@@ -148,13 +171,16 @@ public:
 			std::cout << "if comum" << nodeCounter << std::endl;
 		else if(ctx->children.size() == 7)
 			std::cout << "if else" << nodeCounter << std::endl;*/
+		
 		nodeCounter++;
 		return 0;
 	}
 
 	virtual std::any visitForCommon(TELParser::ForCommonContext *ctx) override {
+		inLoopCounter++;
 		tokenCounter++;
 		writeChild(ctx);
+		inLoopCounter--;
 		return 0;
 	}
 
@@ -165,8 +191,10 @@ public:
 	}
 
 	virtual std::any visitForEach(TELParser::ForEachContext *ctx) override {
+		inLoopCounter++;
 		tokenCounter++;
 		writeChild(ctx);
+		inLoopCounter--;
 		return 0;
 	}
 
@@ -260,15 +288,14 @@ public:
 				//std::cout << "generator" << ctx->ID(1)->toString() << tokenCounter << std::endl;
 				for(int i = tokenCounter; i >= tokenCounter - 5; i--) {
 					//std::cout << currentEPName << std::endl;
-					std::vector tokenNum = EPUnlockLocations[currentEPName][ctx->ID(1)->toString()];
+					std::string ctxVar = ctx->ID(1)->toString();
+					std::vector tokenNum = EPUnlockLocations[currentEPName][ctxVar];
 					//for(auto token: tokenNum)
-					//	std::cout << token << "aqui o token o" << std::endl;
 					if(currentEPName != "" && std::count(tokenNum.begin(), tokenNum.end(), i)) {
-						std::cout << "unlock " << ctx->ID(1)->toString() << std::endl;
+						//std::cout << "unlock " << ctxVar << std::endl;
+						unlockVars.push_back(ctxVar);
 						break;
 					}
-
-					// TODO: store the unlocks and write them when it changes the node (when the condition ends or ep)
 				}
 			}
 			checkForLock = false;

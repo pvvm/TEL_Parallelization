@@ -1,133 +1,172 @@
-header TCPheader { 0
-	int srcport ; 0
-	int srcip ; 0
-	int dstport ; 0
-	int dstip ; 0
-	int seq ; 0
-	} 0
-event SEND { 0
-	int time_event ; 0
-	int flow_id ; 0
-	} 0
-event ACK { 0
-	int flow_id ; 0
-	int acknum ; 0
-	int time_event ; 0
-	} 0
-event TIMER { 0
-	int flow_id ; 0
-	} 0
-context myContext { 0
-	stream data ; 0
-	list < float > startTime ; 0
-	int m_Una ; 0
-	int m_Nxt ; 0
-	int m_start ; 0
-	int m_Wnd ; 0
-	int m_Iss ; 0
-	int Smss ; 0
-	int m_dupSeq ; 0
-	int m_dupAmount ; 0
-	int m_cnwd ; 0
-	int m_ssthresh ; 0
-	int m_segmentsize ; 0
-	int m_dupThreshold ; 0
-	int flow_size ; 0
-	bool timeouthappened ; 0
-	float SRTT ; 0
-	float RTTVAR ; 0
-	float RTO ; 0
-	} 0
-struct proc_out_t { 0
-	list < event_t > event_list ; 0
-	list < pkt_t > packet_list ; 0
-	} 0
-void SendProcessor(SEND this_event , myContext ctx){ 0
-	proc_out_t output ; 0
-	for(; 0
-	(ctx.m_Nxt < ctx.m_Una + ctx.m_Nxt )&& (ctx.m_Nxt < ctx.flow_size ); 0
-	ctx.m_Nxt = ctx.m_Nxt + ctx.m_segmentsize ){ 0
-		TCPheader th ; 0
-		th.seq = ctx.m_Iss + ctx.m_Nxt ; 0
-		pkt_t p = new_pkt(); 0
-		p.add_data (ctx.data[ctx.m_Nxt : ctx.m_Nxt + ctx.m_segmentsize ]); 0
-		p.add_hdr (th ); 0
-		output.packet_list.add (p ); 0
-		ctx.startTime[ctx.m_Iss + ctx.m_Nxt + ctx.m_segmentsize ]= now ; 0
-		} 0
-	return output ; 0
-	} 0
-void ACKProcessor(ACK this_event , myContext ctx){ 0
-	if(! ctx.timeouthappened && ctx.m_Una < this_event.acknum ){ 1
-		float R = now - ctx.startTime[this_event.acknum ]; 1
-		if(ctx.SRTT == 0 ){ 2
-			ctx.SRTT = R ; 2
-			ctx.RTTVAR = R / 2 ; 2
-			if(R == 35 ){ 3
-				ctx.SRTT = 5 ; 3
-				} 3
-			else if(R == 10 ){ 5
-				ctx.SRTT = 10 ; 5
-				} 5
-			ctx.RTO = ctx.SRTT + 4 * ctx.RTTVAR ; 7
-			} 7
-		else if(R > 50 ){ 9
-			ctx.RTO = 5 ; 9
-			ctx.SRTT = 50 ; 9
-			} 9
-		else { 11
-			float alpha = 1.0 / 8.0 ; 11
-			float beta = 1.0 / 4.0 ; 11
-			ctx.RTTVAR = (1 - beta )* ctx.RTTVAR + beta * ctx.SRTT - R ; 11
-			ctx.SRTT = (1 - alpha )* ctx.SRTT + alpha * R ; 11
-			ctx.RTO = ctx.SRTT + 4 * ctx.RTTVAR ; 11
-			} 11
-		ctx.sei_la = 10 ; 13
-		if(ctx.RTO < 1 ){ 14
-			ctx.RTO = 1 ; 14
-			} 14
-		ctx.testing = 12 ; 15
-		} 15
-	ctx.testandoooo = 1 ; 16
-	if(ctx.m_Una < this_event.acknum ){ 17
-		ctx.m_Wnd = ctx.m_Wnd + ctx.m_segmentsize ; 17
-		ctx.m_Una = this_event.acknum ; 17
-		ctx.timeouthappened = false ; 17
-		ACK new_event ; 17
-		new_event.time_event = 0 ; 17
-		new_event.flow_id = this_event.flow_id ; 17
-		output.event_list.add (new_event ); 17
-		} 17
-	return output ; 18
-	} 18
-void TIMERProcessor(TIMER this_event , myContext ctx){ 0
-	proc_out_t output ; 0
-	ctx.timeouthappened = true ; 0
-	pkt_t p = new_pkt(); 0
-	if(ctx.m_Una < ctx.flow_size ){ 1
-		if(ctx.m_Wnd / 2 >= 1 ){ 2
-			ctx.m_Wnd = ctx.m_Wnd / 2 ; 2
-			} 2
-		else { 4
-			ctx.m_Wnd = 1 ; 4
-			} 4
-		TCPheader th ; 5
-		th.seq = ctx.m_Una ; 5
-		ctx.RTO = ctx.RTO * 2 ; 5
-		if(ctx.RTO < 3 ){ 6
-			ctx.RTO = 3.0 ; 6
-			} 6
-		p.add_data (ctx.data[ctx.m_Una : ctx.m_Una + ctx.m_segmentsize ]); 7
-		p.add_hdr (th ); 7
-		} 7
-	output.packet_list.add (p ); 8
-	return output ; 8
-	} 8
-dispatch table { 8
-	SEND -> { SendProcessor } 8
-	; 8
-	ACK -> { ACKProcessor } 8
-	; 8
-	TIMER -> { TIMERProcessor } 8
-	; 8
-	} 8
+header TCPheader { 
+	int srcport ; 
+	int srcip ; 
+	int dstport ; 
+	int dstip ; 
+	int seq ; 
+	} 
+event SEND { 
+	int time_event ; 
+	int flow_id ; 
+	} 
+event ACK { 
+	int flow_id ; 
+	int acknum ; 
+	int time_event ; 
+	} 
+event TIMER { 
+	int flow_id ; 
+	} 
+context myContext { 
+	stream data ; 
+	list < float > startTime ; 
+	int m_Una ; 
+	int m_Nxt ; 
+	int m_start ; 
+	int m_Wnd ; 
+	int m_Iss ; 
+	int Smss ; 
+	int m_dupSeq ; 
+	int m_dupAmount ; 
+	int m_cnwd ; 
+	int m_ssthresh ; 
+	int m_segmentsize ; 
+	int m_dupThreshold ; 
+	int flow_size ; 
+	bool timeouthappened ; 
+	float SRTT ; 
+	float RTTVAR ; 
+	float RTO ; 
+	} 
+struct proc_out_t { 
+	list < event_t > event_list ; 
+	list < pkt_t > packet_list ; 
+	} 
+void SendProcessor(SEND this_event , myContext ctx){ 
+	lock(m_Nxt);
+	lock(startTime);
+	proc_out_t output ; 
+	for(; 
+	(ctx.m_Nxt < ctx.m_Una + ctx.m_Nxt )&& (ctx.m_Nxt < ctx.flow_size ); 
+	ctx.m_Nxt = ctx.m_Nxt + ctx.m_segmentsize ){ 
+		TCPheader th ; 
+		th.seq = ctx.m_Iss + ctx.m_Nxt ; 
+		pkt_t p = new_pkt(); 
+		p.add_data (ctx.data[ctx.m_Nxt : ctx.m_Nxt + ctx.m_segmentsize ]); 
+		p.add_hdr (th ); 
+		output.packet_list.add (p ); 
+		ctx.startTime[ctx.m_Iss + ctx.m_Nxt + ctx.m_segmentsize ]= now ; 
+		} 
+	unlock(startTime);
+	unlock(m_Nxt);
+	return output ; 
+	} 
+void ACKProcessor(ACK this_event , myContext ctx){ 
+	lock(RTO);
+	lock(RTTVAR);
+	lock(SRTT);
+	lock(idk);
+	lock(m_Una);
+	lock(m_Wnd);
+	lock(testing);
+	lock(testingggggg);
+	lock(timeouthappened);
+	if(! ctx.timeouthappened && ctx.m_Una < this_event.acknum ){ 
+		float R = now - ctx.startTime[this_event.acknum ]; 
+		if(ctx.SRTT == 0 ){ 
+			ctx.SRTT = R ; 
+			unlock(SRTT);
+			ctx.RTTVAR = R / 2 ; 
+			if(R == 35 ){ 
+				ctx.SRTT = 5 ; 
+				unlock(SRTT);
+				} 
+			else if(R == 10 ){ 
+				ctx.SRTT = 10 ; 
+				unlock(SRTT);
+				} 
+			ctx.RTTVAR = 5 ; 
+			unlock(RTTVAR);
+			ctx.RTO = ctx.SRTT + 4 * ctx.RTTVAR ; 
+			unlock(RTO);
+			} 
+		else if(R > 50 ){ 
+			ctx.RTO = 5 ; 
+			unlock(RTO);
+			ctx.SRTT = 50 ; 
+			unlock(SRTT);
+			} 
+		else { 
+			float alpha = 1.0 / 8.0 ; 
+			float beta = 1.0 / 4.0 ; 
+			ctx.RTTVAR = (1 - beta )* ctx.RTTVAR + beta * ctx.SRTT - R ; 
+			unlock(RTTVAR);
+			ctx.SRTT = (1 - alpha )* ctx.SRTT + alpha * R ; 
+			unlock(SRTT);
+			ctx.RTO = ctx.SRTT + 4 * ctx.RTTVAR ; 
+			unlock(RTO);
+			} 
+		ctx.idk = 10 ; 
+		unlock(idk);
+		if(ctx.RTO < 1 ){ 
+			ctx.RTO = 1 ; 
+			unlock(RTO);
+			} 
+		ctx.testing = 12 ; 
+		unlock(testing);
+		} 
+	ctx.testingggggg = 1 ; 
+	unlock(testingggggg);
+	if(ctx.m_Una < this_event.acknum ){ 
+		ctx.m_Wnd = ctx.m_Wnd + ctx.m_segmentsize ; 
+		unlock(m_Wnd);
+		ctx.m_Una = this_event.acknum ; 
+		unlock(m_Una);
+		ctx.timeouthappened = false ; 
+		unlock(timeouthappened);
+		ACK new_event ; 
+		new_event.time_event = 0 ; 
+		new_event.flow_id = this_event.flow_id ; 
+		output.event_list.add (new_event ); 
+		} 
+	return output ; 
+	} 
+void TIMERProcessor(TIMER this_event , myContext ctx){ 
+	lock(RTO);
+	lock(m_Wnd);
+	lock(timeouthappened);
+	proc_out_t output ; 
+	ctx.timeouthappened = true ; 
+	unlock(timeouthappened);
+	pkt_t p = new_pkt(); 
+	if(ctx.m_Una < ctx.flow_size ){ 
+		if(ctx.m_Wnd / 2 >= 1 ){ 
+			ctx.m_Wnd = ctx.m_Wnd / 2 ; 
+			unlock(m_Wnd);
+			} 
+		else { 
+			ctx.m_Wnd = 1 ; 
+			unlock(m_Wnd);
+			} 
+		TCPheader th ; 
+		th.seq = ctx.m_Una ; 
+		ctx.RTO = ctx.RTO * 2 ; 
+		unlock(RTO);
+		if(ctx.RTO < 3 ){ 
+			ctx.RTO = 3.0 ; 
+			unlock(RTO);
+			} 
+		p.add_data (ctx.data[ctx.m_Una : ctx.m_Una + ctx.m_segmentsize ]); 
+		p.add_hdr (th ); 
+		} 
+	output.packet_list.add (p ); 
+	return output ; 
+	} 
+dispatch table { 
+	SEND -> { SendProcessor } 
+	; 
+	ACK -> { ACKProcessor } 
+	; 
+	TIMER -> { TIMERProcessor } 
+	; 
+	} 
