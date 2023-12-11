@@ -3,12 +3,14 @@
 #include <iostream>
 #include <map>
 #include <set>
+#include <algorithm>
 
 struct node{
   std::vector<node*> children;
   std::vector<node*> parents;
   int id=-1;
   std::map<std::string,int> variableLocation;
+  std::map<std::string,bool> lock;
 };
 struct graph
 {
@@ -68,27 +70,84 @@ struct graph
         for(auto var: vars){
           std::cout<<"curr variable: "<<var<<std::endl;
           std::vector<bool> visited(id,false);
+          std::vector<bool> visited2(id,false);
+          std::vector<bool> visited3(id,false);
           std::vector<int> locks;
-          getLocks(curr,visited,locks,var, nodesId[var]);
+          showVariableUses(curr,visited,var);
+          getUnlocks(curr,visited2,locks,var, nodesId[var]);
+          storeUnlocks(curr,visited3,locks,var, nodesId[var]);
           std::sort(nodesId[var].begin(), nodesId[var].end());
           lockMap[var]=locks;
         }
         return lockMap;
     }
 
-  void getLocks(node* a,std::vector<bool> &visited,std::vector<int>&locks,std::string var, std::vector<int>&nodesId){
+  void showVariableUses(node* a,std::vector<bool> &visited,std::string var){
     if(visited[a->id]){
       return;
     }
     visited[a->id]=true;
     if(a->variableLocation.count(var)>0){
-      locks.push_back(a->variableLocation[var]);
-      nodesId.push_back(a->variableLocation[var]);
-      std::cout<<"unlock added at: "<<a->id<<std::endl;
+      std::cout<<"variable used at: "<<a->id<<std::endl;
       return;
     }
+
     for(auto parent: a->parents){
-        getLocks(parent,visited,locks,var, nodesId);
+        showVariableUses(parent,visited,var);
       }
     }
+
+    node* moveTo(node* a){
+      while(a ->parents.size()==1&& a ->children.size()>0){
+        a = a->children[0];
+      }
+      return a;
+    }
+
+  void storeUnlocks(node* a,std::vector<bool> &visited,std::vector<int>&locks,std::string var, std::vector<int>&nodesId){
+    if(visited[a->id]){
+      return;
+    }
+    visited[a->id]=true;
+    if(a->lock[var]){
+      nodesId.push_back(a->variableLocation[var]);
+      locks.push_back(a->variableLocation[var]);
+      std::cout<<"* variable unlocked at: "<<a->id<<std::endl;
+    }
+
+    for(auto parent: a->parents){
+        storeUnlocks(parent,visited,locks,var, nodesId);
+      }
+  }
+
+  void getUnlocks(node* a,std::vector<bool> &visited,std::vector<int>&locks,std::string var, std::vector<int>&nodesId, bool locked = false, node* lock_location = NULL){
+    if(a->lock.count(var)==0){
+      a->lock[var] = false;
+    }
+    if((a->variableLocation.count(var)>0) && !locked){
+      if(!(visited[a->id]&&!a->lock[var]))
+      {
+        // locks.push_back(a->variableLocation[var]);
+        // nodesId.push_back(a->variableLocation[var]);
+        a->lock[var]=true;
+        locked = true;
+        lock_location =a;
+        //std::cout<<"unlock added at: "<<a->id<<std::endl;
+        }
+    }
+    else if(a->variableLocation.count(var)>0 && locked){
+      // locks.(a->variableLocation[var]);
+      // nodesId.push_back(a->variableLocation[var]);
+      a->lock[var]=false;
+      node* dest = moveTo(lock_location);
+      dest->lock[var] = true;
+      //std::cout<<"duplicate lock at: "<<a->id<<std::endl;
+      //std::cout<<"unlock moved to: "<<dest->id<<std::endl;
+    }
+    visited[a->id]=true;
+    for(auto parent: a->parents){
+        getUnlocks(parent,visited,locks,var, nodesId,locked,lock_location);
+    }
+
+  }
 };
