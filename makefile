@@ -24,7 +24,7 @@ $(BUILD_DIR)/parser.o: $(GRAMMAR_DIR)/TELParser.cpp $(GRAMMAR_DIR)/TELParser.h
 $(BUILD_DIR)/lexer.o: $(GRAMMAR_DIR)/TELLexer.cpp $(GRAMMAR_DIR)/TELLexer.h
 	g++ -c $(GRAMMAR_DIR)/TELLexer.cpp  $(C_FLAGS) -o $(BUILD_DIR)/lexer.o --std=c++17
 
-$(BUILD_DIR)/compiler.o: $(SRC_DIR)/Compiler.cpp $(HEADER_DIR)/Compiler.h $(GRAMMAR_DIR)/TELLexer.h $(GRAMMAR_DIR)/TELParser.h $(HEADER_DIR)/TELTreeVisitor.h $(HEADER_DIR)/TELGeneratorVisitor.h
+$(BUILD_DIR)/compiler.o: $(SRC_DIR)/Compiler.cpp $(HEADER_DIR)/Compiler.h $(GRAMMAR_DIR)/TELLexer.h $(GRAMMAR_DIR)/TELParser.h $(HEADER_DIR)/TELTreeVisitor.h $(HEADER_DIR)/TELGeneratorVisitor.h $(HEADER_DIR)/utils.h
 	g++ -c $(SRC_DIR)/Compiler.cpp  $(C_FLAGS) -o $(BUILD_DIR)/compiler.o --std=c++17
 
 $(GRAMMAR_DIR)/TELLexer.cpp: TEL.g4

@@ -1,0 +1,311 @@
+event SEND{
+    int flow_id;
+}
+
+event ACK{
+    int flow_id;
+    list<int> pkt_nums;
+    int largest;
+    int ECT0_Count;
+    int ECT1_Count;
+    int ECN_CE_Count;
+}
+
+event TIMER{}
+
+event ADD_DATA{
+    bool server_side;
+    bool direction;
+    stream data;
+}//handle stream ids based on section 2.1
+
+event CONGESTION{
+    int time_sent;
+}
+
+struct QuicStream
+{
+    stream data;
+    int id;
+    int frame_size_limit;
+    int last_sent;
+    list<bool> acked_frames;
+}
+
+struct PacketInfo
+{
+    int packet_id;
+    int time_sent;
+    bool in_flight;
+    bool ack_eliciting;
+    int size;
+    list<int> stream_id;
+    list<int> frame_size;
+    list<int> start_point;
+}
+
+struct Frame
+{
+    int data_length;
+    int stream_id;
+    int offset;
+    stream data;
+}
+
+context MyContext
+{
+    list<QuicStream> streams;
+    list<PacketInfo> sent_packets;
+    int curr_idx;
+    int size_limit;
+    int MAX_STREAMS;
+    int id_counter=0;
+    int server_stream_counter=0;
+    int client_stream_counter=0;
+    int largest_acked_time=0;
+    int packet_size_limit;
+
+    //loss detection
+    int kPacketThresh=3;
+    int kTimeThreshold;
+    int time_of_last_ack_eliciting_packet=0;
+    int largest_acked_packet = -1;//Question: is inf ok?
+    int kGranularity;
+    //vars
+    int pto_count = 0;
+    int latest_rtt = 0;
+    int smoothed_rtt;
+    int rttvar;
+    int min_rtt=0;
+    int first_rtt_sample=0;
+    int loss_time;
+
+    bool update_rtt = false;
+    //congestion
+    int initialWindow = 14720;
+    int minimumWindow;
+    float lossReductionFactor = 0.5;
+    int persistentCongestionThreshold = 3;
+
+    int max_datagram_size;
+    int bytes_in_flight=0;
+    int congestion_window=0;
+    int congestion_recovery_start_time=0;
+    int ssthresh=-1;
+    int ecn_ce_counters=0;
+}
+
+
+
+header QuicHeader{
+    int pkt_id;
+}
+
+void selectDataProcessor(SEND ev, MyContext ctx, list<event_t> events, interm_out out, tx_module tx){
+    int sent_size = 0;
+    int i = 0;
+    pkt_t pkt = new_pkt();
+    QuicStream qs;
+    int bytes_allowed = ctx.congestion_window-ctx.bytes_in_flight;
+    int frame_size_limit = bytes_allowed/ctx.streams.len();
+    while(bytes_allowed>0){
+        PacketInfo pkt_info;
+        while(sent_size<ctx.size_limit && i < ctx.streams.len() && bytes_allowed>0 ){
+            qs=ctx.streams[i];
+            Frame frame;
+            pkt_info.stream_id.add(i);
+            frame.size = min(qs.frame_size_limit,bytes_allowed,frame_size_limit,qs.data.len()-qs.last_sent);
+            pkt_info.frame_size.add(frame.size);
+            pkt_info.start_point.add(qs.last_sent);
+            frame.data = qs.data[qs.last_sent:qs.last_sent + frame.size];
+            qs.last_sent = qs.last_sent + frame.size;
+            pkt.add_data(byte(frame));
+            ctx.bytes_in_flight = ctx.bytes_in_flight + frame.data.len();
+            bytes_allowed = bytes_allowed - frame.data.len();
+            i = i + 1;
+        }
+    pkt_info.time_sent=now();
+    QuicHeader qheader;
+    qheader.pkt_id = ctx.id_counter + 1;
+    pkt_info.packet_id = qheader.pkt_id;
+    pkt.add_hdr(qheader);
+    ctx.sent_packets.add(pkt_info);
+    tx_module.add(pkt);// pick a queue to add a packet
+    }
+}
+
+interm_output iterm_out {
+    pkt_t packet;
+    PacketInfo info;
+    list<PacketInfo> lost_packets;
+}
+
+void sendProcessor<T>(T ev, myContext ctx, list<event_t> events, interm_out out, tx_module tx) {
+    if (info.in_flight){
+        if (info.ack_eliciting)
+            ctx.time_of_last_ack_eliciting_packet = now();
+    }
+}
+
+void ackProcessor(ACK ev, MyContext ctx, list<event_t> events, interm_out out, tx_module tx) {
+    if (ctx.largest_acked_packet == -1)
+        ctx.largest_acked_packet = ev.largest_acked;
+    else{
+        ctx.largest_acked_packet = max(ctx.largest_acked_packet, ev.largest_acked);
+    }
+    bool new_packet_acked=false;
+    list<PacketInfo> acked_packets;
+    int acked_bytes;
+    for(int i=0; i<ev.pkt_nums.len();i = i + 1){// change to for each
+        for (int j=0; j<ctx.sent_packets.len(); j = j + 1){
+            if(i==ctx.sent_packets[j].packet_id){
+                if(i == ctx.largest_acked_packet)
+                    ctx.largest_acked_time = sent_packets[j].time_sent;
+                acked_packets.add(ctx.sent_packets[j]);
+                ctx.acked_bytes = ctx.acked_bytes - ctx.sent_packets[j].size;
+                ctx.sent_packets.remove(ctx.sent_packets[j]); //change to remove(element)
+                new_packet_acked=true;
+                break;
+            }
+        }
+    }
+    ctx.bytes_in_flight = ctx.bytes_in_flight - acked_bytes;
+    if(!new_packet_acked)
+        return;
+
+    ctx.latest_rtt = now() - ctx.largest_acked_time;
+    ctx.update_rtt = true;
+
+    //SetLossDetectionTimer()
+    if(ack.ECN_CE_Count>ctx.ecn_ce_counters){
+        ctx.ecn_ce_counters = ack.ECN_CE_Count;
+        out.in_congestion = true;
+        out.start_time = ctx.largest_acked_packet;
+    }
+}
+
+void updateRttProcessor(ACK ev, myContext ctx, list<event_t> events, interm_out out, tx_module tx) {
+
+    if(!ctx.update_rtt)
+        return;
+    ctx.update_rtt = false;
+    if (ctx.first_rtt_sample == 0){
+        ctx.min_rtt = ctx.latest_rtt;
+        ctx.smoothed_rtt = ctx.latest_rtt;
+        ctx.rttvar = ctx.latest_rtt / 2;
+        ctx.first_rtt_sample = now();
+        return;
+    }
+
+    ctx.min_rtt = min(ctx.min_rtt, ctx.latest_rtt);
+  // Limit ack_delay by max_ack_delay after handshake confirmation.
+    ctx.ack_delay = min(ctx.ack_delay, ctx.max_ack_delay);
+
+  // Adjust for acknowledgment delay if plausible.
+    ctx.adjusted_rtt = ctx.latest_rtt;
+    if (ctx.latest_rtt >= ctx.min_rtt + ctx.ack_delay)
+        ctx.adjusted_rtt = ctx.latest_rtt - ctx.ack_delay;
+
+    ctx.rttvar = 3/4 * ctx.rttvar + 1/4 * abs(ctx.smoothed_rtt - ctx.adjusted_rtt);
+    ctx.smoothed_rtt = 7/8 * ctx.smoothed_rtt + 1/8 * ctx.adjusted_rtt;
+
+}
+
+void adjustWindowProcessor<T>(T ev, myContext ctx, list<event_t> events, interm_out out, tx_module tx) {
+    pkt_t packet;
+    foreach(packet in out.acked_packets){
+        if (packet.time_sent <= ctx.congestion_recovery_start_time)
+            continue;
+        if(ctx.congestion_window < ctx.ssthresh)
+            ctx.congestion_window = ctx.congestion_window + packet.sent_bytes;
+        else
+            ctx.congestion_window = ctx.congestion_window + ctx.max_datagram_size*packet.sent_bytes/ctx.congestion_window;
+    }
+    if(ctx.congestion_window-ctx.bytes_in_flight>ctx.send_thresh){
+        SEND ev;
+        ev.fow_id = ctx.flow_id;
+        events.add(ev);
+    }
+        
+}
+
+void congestionProcessor(CONGESTION ev, myContext ctx, list<event_t> events, interm_out out, tx_module tx) {
+
+    if (out.time_sent <= ctx.congestion_recovery_start_time||!out.in_congestion)
+        return;
+
+    ctx.congestion_recovery_start_time = now();
+    ctx.ssthresh = ctx.congestion_window * ctx.lossReductionFactor;
+    ctx.congestion_window = max(ctx.ssthresh, ctx.minimumWindow);
+
+}
+
+void lossDetectionProcessor<T>(T ev, myContext ctx, list<event_t> events, interm_out out, tx_module tx) {
+
+    list<PacketInfo> lost_packets;
+    int loss_delay=ctx.kTimeThreshold;
+    int loss_threshold = now()-loss_delay;
+    int last_loss = 0;
+    for (int i=0; i<ctx.sent_packets.len();i = i + 1){
+        if(ctx.sent_packets[i].packet_id > ctx.largest_acked_packet)
+            continue;
+        if(ctx.sent_packets[i].time_sent > loss_threshold || ctx.largest_acked_packet >= ctx.sent_packets[i].packet_number + ctx.kPacketThreshold){
+            lost_packets.add(ctx.sent_packets[i]);
+            last_loss = max(ctx.sent_packets[i].sent_time,last_loss);
+            ctx.sent_packets.remove(ctx.sent_packets[i]);
+        }
+    }
+
+    out.lost_packets=lost_packets;
+    if (lost_packets.len()>0){
+        out.in_congestion = true;
+        out.start_time = last_loss;
+    }
+
+}
+
+void retransmitProcessor<T>(T ev, MyContext ctx, list<event_t> events, interm_out out, tx_module tx) {
+    if(out.lost_packets.len()==0){
+        return;//is it allowed?
+    }
+    for(int j=0; j<out.lost_packets.len();j = j + 1){
+        PacketInfo lost_packet=out.lost_packets[j];
+        pkt_t pkt = new_pkt();
+        QuicStream qs;
+        PacketInfo pkt_info = lost_packet;//copy by reference or value?
+        for(int i=0; i<lost_packet.stream_id.len(); i = i + 1){
+            QuicStream qs = ctx.streams[lost_packet.stream_id[i]];
+            Frame frame;
+            frame.size =lost_packet.frame_size[i];
+            frame.data = qs.data[lost_packet.start_point[i]:lost_packet.start_point[i] + frame.size];
+            pkt.add_data(byte(frame));
+        }
+        QuicHeader qheader;
+        qheader.pkt_id = ctx.sent_packets.len();
+        pkt_info.packet_id = qheader.pkt_id;
+        pkt.add_hdr(qheader);
+        ctx.sent_packets.add(pkt_info);
+        packets.add(pkt);//tx module instead of this
+    }
+
+}
+
+void addStreamProcessor(ADD_DATA ev, myContext ctx, list<event_t> events, interm_out out, tx_module tx) {
+    QuicStream qs;
+    if(ev.server_stream){
+        qs.id=(ctx.server_stream_counter = ctx.server_stream_counter + 2);
+    }else{
+        qs.id=(ctx.client_stream_counter = ctx.client_stream_counter + 2);
+    }
+    qs.data=ev.data;
+    SEND ev;
+    ev.fow_id = ctx.flow_id;
+    events.add(ev);
+}
+
+dispatch table{
+    SEND -> {selectDataProcessor, sendProcessor};
+    ACK -> {ackProcessor ,congestionProcessor,updateRttProcessor,lossDetectionProcessor, congestionProcessor,  adjustWindowProcessor, retransmitProcessor};
+    TIMER -> {lossDetectionProcessor,congestionProcessor,retransmitProcessor};
+    ADD_DATA -> {addStreamProcessor};
+}

@@ -27,8 +27,14 @@ Compiler::Compiler(string filename)
     TELTreeVisitor visitor;
     // Creates the new file to write code on
     filename = filename.substr(0, filename.find(".") + 1) + "ir";
-    //visitor.visit(parser.initial());
+    visitor.visit(parser.initial());
+    visitor.printTree();
+    std::map<std::string, std::map<std::string, std::vector<int>>> nodesLock;
+    nodesLock = visitor.getLocks();
+
+    parser.reset();
     TELGeneratorVisitor generator;
+    generator.EPUnlockLocations = nodesLock;
     generator.outputFile.open(filename, ofstream::trunc);
     generator.visit(parser.initial());
 }

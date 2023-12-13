@@ -16,10 +16,10 @@ structLike : ('context'|'struct'|'interm_output'|'event'|'header') ID '{' onlyVa
             | 'event' ID ':' ID '{' onlyVarDecl '}'
             ;
 
-onlyVarDecl : (type ID ';'|type ID '=' (INT|FLOAT) ';'|LIST_T '<' type '>' ID ';')*
+onlyVarDecl : (type ID ';'|type ID '=' ('-')? (INT|FLOAT|TRUE|FALSE) ';'|LIST_T '<' type '>' ID ';')*
             ;
 
-eventProc   : 'void' ID '(' (type ID (',' type ID)*)? ')' '{' statement* '}'
+eventProc   : 'void' ID ('<' 'T' '>')? '(' ((type|'T') ID (',' ((type ID) | (('list' '<' type '>' ID))))*)? ')' '{' statement* '}'
             ;
 
 statement   : (condition|forCommon|forEach|assign ';'|returnTEL ';'|varDecl ';'| 'break'  ';')
@@ -29,7 +29,8 @@ condition   : 'if' '(' assign ')' curlyBrack
             | 'if' '(' assign ')' curlyBrack 'else' curlyBrack
             ;
 
-forCommon   : 'for' '(' forArg ')' curlyBrack
+forCommon   : ('for' '(' forArg ')' curlyBrack
+            | 'while' '(' orTEL ')' curlyBrack)
             ;
 
 forArg      : (varDecl|assign)? ';' orTEL ';' assign
@@ -42,7 +43,7 @@ curlyBrack  : '{' statement* '}'
             | statement
             ;
 
-returnTEL   : 'return' assign
+returnTEL   : 'return' (assign)?
             ;
 
 varDecl     : type ID ('=' orTEL)*
@@ -74,16 +75,19 @@ mathLow     : mathHigh (('+'|'-') mathHigh)*
 mathHigh    : unary (('*'|'/') unary)*
             ;
 
-unary       : (('-'|'!')? symbol| ('type'|'bytes')? '(' assign ')')
+unary       : (('-'|'!')? symbol | ('-'|'!')? '(' orTEL ')'
+                | ('type'|'byte'|'ceil'|'min'|'max'|'abs')? '(' assign (',' assign)* ')'
+                | 'now' '(' ')'
+                | ('mem_write' '(' orTEL (',' orTEL)* ')'))
             ;
 
 symbol      : (identifier|INT|FLOAT|FALSE|TRUE|'new_pkt' '(' ')')
             ;
 
-identifier  : ID ('.' ID|'.' builtFunc '(' (assign)? ')'|'[' orTEL (':' orTEL)* ']')*
+identifier  : ID ('.' ID|'.' builtFunc '(' (assign (',' assign)*)? ')'|'[' orTEL (':' orTEL)* ']')*
             ;
 
-builtFunc   : ('add'|'remove'|'add_hdr'|'get_hdr' '<' ID '>'|'add_data'|'get_data'|'push'|'pop'|'len')
+builtFunc   : ('add'|'remove'|'add_hdr'|'extract_hdr'|'add_data'|'get_data'|'push'|'pop'|'len'|'mem_append'|'rate')
             ;
 
 // Lexer
