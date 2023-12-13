@@ -16,11 +16,11 @@ class  TELGeneratorVisitor : public TELVisitor {
 private:
 	int indentationCounter = 0;
 	bool inDispatch = false;
-	int nodeCounter = 0;
 	int tokenCounter = 0;
 	bool previousTokenElse = false;
 	bool inProcess = false;
 	int inLoopCounter = 0;
+	int inCondCounter = 0;
 	bool checkForLock = false;
 	bool firstStatementEP = false;
 	std::string currentEPName = "";
@@ -43,16 +43,6 @@ private:
 			if (!indentation.empty())
 				indentation.erase(indentation.end() - 1);
 		}
-		
-		/*if(token == "else") {
-			nodeCounter++;
-			previousTokenElse = true;
-		} else if(previousTokenElse && token == "{") {
-			nodeCounter++;
-			previousTokenElse = false;
-		} else {
-			previousTokenElse = false;
-		}*/
 
 		if(!inDispatch && token == "{" || token == "}" || token == ";") {
 			outputFile << "\n" + indentation;
@@ -125,16 +115,13 @@ public:
 	}
 
 	virtual std::any visitEventProc(TELParser::EventProcContext *ctx) override {
-		//indentationCounter++;
 		currentEPName = ctx->ID(0)->toString();
 		inProcess = true;
 		firstStatementEP = true;
-		nodeCounter = 0;
 		tokenCounter++;
 		writeChild(ctx);
 		inProcess = false;
 		currentEPName = "";
-		//indentationCounter--;
 		return 0;
 	}
 
@@ -145,7 +132,7 @@ public:
 			for(int i = 0; i < indentationCounter; i++)
 				indentation += "\t";
 			for(auto EPName: EPUnlockLocations[currentEPName]) {
-				outputFile << "lock(" << EPName.first << ");\n" << indentation;
+				outputFile << "lock(ctx." << EPName.first << ");\n" << indentation;
 			}
 		}
 		firstStatementEP = false;
@@ -156,7 +143,8 @@ public:
 			indentation += "\t";
 		if(inLoopCounter == 0) {
 			while(unlockVars.size() > 0) {
-				outputFile << "unlock(" << unlockVars.back() << ");\n" << indentation;
+				// TODO: change ctx to the id used in the EP for the context
+				outputFile << "unlock(ctx." << unlockVars.back() << ");\n" << indentation;
 				unlockVars.pop_back();
 			}
 		}
@@ -164,15 +152,10 @@ public:
 	}
 
 	virtual std::any visitCondition(TELParser::ConditionContext *ctx) override {
-		nodeCounter++;
 		tokenCounter++;
+		inCondCounter++;
 		writeChild(ctx);
-		/*if(ctx->children.size() == 5)
-			std::cout << "if comum" << nodeCounter << std::endl;
-		else if(ctx->children.size() == 7)
-			std::cout << "if else" << nodeCounter << std::endl;*/
-		
-		nodeCounter++;
+		inCondCounter--;
 		return 0;
 	}
 
