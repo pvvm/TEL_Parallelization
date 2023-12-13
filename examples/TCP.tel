@@ -41,7 +41,6 @@ context myContext {
     float SRTT;
     float RTTVAR;
     float RTO;
-    float now;
 }
 
 struct proc_out_t {
@@ -49,7 +48,7 @@ struct proc_out_t {
     list<pkt_t> packet_list;
 }
 
-void SendProcessor(SEND this_event, myContext ctx) {
+void SendProcessor(SEND this_event, myContext ctx, list<event_t> events, interm_out out, tx_module tx) {
     proc_out_t output;
 
     for(;
@@ -62,15 +61,15 @@ void SendProcessor(SEND this_event, myContext ctx) {
         p.add_hdr(th);
         output.packet_list.add(p);
 
-        float now = ctx.now;
-        ctx.startTime[ctx.m_Iss + ctx.m_Nxt + ctx.m_segmentsize] = now;
+        float nowVar = now();
+        ctx.startTime[ctx.m_Iss + ctx.m_Nxt + ctx.m_segmentsize] = nowVar;
     }
 }
 
-void ACKProcessor(ACK this_event, myContext ctx) {
+void ACKProcessor(ACK this_event, myContext ctx, list<event_t> events, interm_out out, tx_module tx) {
     if(!ctx.timeouthappened && ctx.m_Una < this_event.acknum) {
-        float now = ctx.now;
-        float R = now - ctx.startTime[this_event.acknum];
+        float nowVar = now();
+        float R = nowVar - ctx.startTime[this_event.acknum];
         if (ctx.SRTT == 0) {
             ctx.SRTT = R;
             ctx.RTTVAR = R/2;
@@ -98,7 +97,7 @@ void ACKProcessor(ACK this_event, myContext ctx) {
     }
 }
 
-void TIMERProcessor(TIMER this_event, myContext ctx) {
+void TIMERProcessor(TIMER this_event, myContext ctx, list<event_t> events, interm_out out, tx_module tx) {
     proc_out_t output;
     ctx.timeouthappened = true;
     pkt_t p = new_pkt();

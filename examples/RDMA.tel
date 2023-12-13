@@ -1107,26 +1107,26 @@ void DcqcnTimerProcessor(DCQCN_TIMER ev, myContext ctx, list<event_t> events, in
 }
 
 void DcqcnIncreaseProcessor(DCQCN_INCREASE ev, myContext ctx, list<event_t> events, interm_out out, tx_module tx) {
-    int max;
-    int min;
+    int max_DCQCN;
+    int min_DCQCN;
 
     if(ctx.DCQCN_TT > ctx.BC) {
-        max = ctx.DCQCN_T;
-        min = ctx.BC;
+        max_DCQCN = ctx.DCQCN_T;
+        min_DCQCN = ctx.BC;
     } else if(ctx.DCQCN_T < ctx.BC) {
-        max = ctx.BC;
-        min = ctx.DCQCN_T;
+        max_DCQCN = ctx.BC;
+        min_DCQCN = ctx.DCQCN_T;
     } else {
-        max = ctx.BC;
-        min = max;
+        max_DCQCN = ctx.BC;
+        min_DCQCN = max_DCQCN;
     }
 
-    if(max < ctx.F) {
+    if(max_DCQCN < ctx.F) {
         // Fast recovery
         ctx.Rc = (ctx.Rt + Rc) / 2;
-    } else if(min > ctx.F) {
+    } else if(min_DCQCN > ctx.F) {
         // Hyper increase
-        ctx.Rt = ctx.Rai * (min - ctx.F + 1);
+        ctx.Rt = ctx.Rai * (min_DCQCN - ctx.F + 1);
         ctx.Rc = (ctx.Rt + ctx.Rc) / 2;
     } else {
         // Additive increase

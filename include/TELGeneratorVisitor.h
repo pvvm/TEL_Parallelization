@@ -143,7 +143,6 @@ public:
 			indentation += "\t";
 		if(inLoopCounter == 0) {
 			while(unlockVars.size() > 0) {
-				// TODO: change ctx to the id used in the EP for the context
 				outputFile << "unlock(ctx." << unlockVars.back() << ");\n" << indentation;
 				unlockVars.pop_back();
 			}
@@ -265,18 +264,14 @@ public:
 	}
 
 	virtual std::any visitIdentifier(TELParser::IdentifierContext *ctx) override {
-		//std::cout<<ctx->children[0]->getText()<<std::endl;
 		if(inProcess && checkForLock){
 			if(ctx->ID(0)->toString() == "ctx") {
-				//std::cout << "generator" << ctx->ID(1)->toString() << tokenCounter << std::endl;
 				for(int i = tokenCounter; i >= tokenCounter - 5; i--) {
-					//std::cout << currentEPName << std::endl;
 					std::string ctxVar = ctx->ID(1)->toString();
 					std::vector tokenNum = EPUnlockLocations[currentEPName][ctxVar];
-					//for(auto token: tokenNum)
 					if(currentEPName != "" && std::count(tokenNum.begin(), tokenNum.end(), i)) {
-						//std::cout << "unlock " << ctxVar << std::endl;
-						unlockVars.push_back(ctxVar);
+						if(!std::count(unlockVars.begin(), unlockVars.end(), ctxVar))
+							unlockVars.push_back(ctxVar);
 						break;
 					}
 				}
