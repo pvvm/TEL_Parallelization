@@ -18,22 +18,19 @@
 
 class  TELTreeVisitor : public TELVisitor {
 private:
-  std::map<std::string,std::set<std::string>> lockMap;
-  std::map<std::string,std::map<std::string,graph*> >usageTree;
-  std::map<std::string, graph*>EPTree;
+  std::map<std::string,std::set<std::string>> lockMap;//for each processor, shows the ctx variables that are assigned.
+  std::map<std::string, graph*>EPTree;//stores the tree for each processor
   std::string currProcess;
-  bool inProcess = false;
-  bool checkForLock = false;
-  int counter = 0;
+  bool inProcess = false;//is true when travrsing an event process tree
+  bool checkForLock = false;//is true when checking an assignment;
+  int counter = 0;//stores a unique number to identify each node in parse tree;
 public:
 
   TELTreeVisitor():TELVisitor(){
     counter=0;
   }
 
-  std::map<std::string,std::map<std::string,graph*> > getUsageTree(){
-    return usageTree;
-  }
+  
   void printTree(){
     for(auto processTree: EPTree){
       std::cout << "*************************" <<processTree.first<< std::endl;
@@ -41,10 +38,11 @@ public:
     }
   }
 
-  std::map<std::string, std::map<std::string, std::vector<int>>> getLocks(){
+  std::map<std::string, std::map<std::string, std::vector<int>>> getLocks(bool print = false){
     std::map<std::string, std::map<std::string, std::vector<int>>> nodesLock;
     for(auto processTree: EPTree){
-      std::cout << "*************************" <<processTree.first<< std::endl;
+      if(print)
+        std::cout << "*************************" <<processTree.first<< std::endl;
       processTree.second->getLocks(lockMap[processTree.first], nodesLock[processTree.first]);
     }
     return nodesLock;
@@ -61,8 +59,6 @@ public:
   }
 
   virtual std::any visitDispEPs(TELParser::DispEPsContext *ctx) override {
-    if(ctx->ID().size()>0)
-      std::cout<<ctx->ID(0)->toString()<<std::endl;
     counter++;
     return visitChildren(ctx);
   }
@@ -76,7 +72,7 @@ public:
     counter++;
     return visitChildren(ctx);
   }
-
+  //creates a new gaph when entering a new Event Processor.
   virtual std::any visitEventProc(TELParser::EventProcContext *ctx) override {
     inProcess = true;
     currProcess = ctx->ID(0)->toString();
@@ -92,6 +88,7 @@ public:
     return visitChildren(ctx);
   }
 
+//creates creates branches in the graph.
   virtual std::any visitCondition(TELParser::ConditionContext *ctx) override {
     std::any out = visit(ctx->children[2]);
     node* branchStart;
@@ -106,7 +103,7 @@ public:
     EPTree[currProcess]->addChild(branchEnd);
     EPTree[currProcess]->curr=branchStart;
     
-    if(ctx->children.size()==7){
+    if(ctx->children.size()==7){//if our condition has an "else"
       EPTree[currProcess]->addChild(new node);
       visit(ctx->children[6]);
     }
@@ -198,11 +195,11 @@ public:
     return visitChildren(ctx);
   }
 
+//updates the node info if there is an assignment to ctx variable.
   virtual std::any visitIdentifier(TELParser::IdentifierContext *ctx) override {
     if(inProcess && checkForLock){
       if(ctx->ID(0)->toString()=="ctx"){
         EPTree[currProcess]->add(ctx->ID(1)->toString(),counter);
-        std::cout << "visitor" <<ctx->ID(1)->toString() << counter << std::endl;
         lockMap[currProcess].insert(ctx->ID(1)->toString());
       }
       checkForLock =false;
