@@ -26,13 +26,17 @@ private:
 	std::string currentEPName = "";
 	std::vector<std::string> unlockVars;
 
+	// Writes the symbols and indentation to the file
 	std::string writeAndIndentation(std::string token, std::string nextToken, std::string indentation) {
 		std::string symbols = ".()[]";
+
+		// Adds spacing if the current symbol isn't one of the above
 		if(nextToken != "" && (symbols.find(nextToken) < symbols.length()) || (symbols.find(token) < symbols.length()))
 			outputFile << token;
 		else
 			outputFile << token + " ";
 
+		// Increases and decreases indentation counter when we enter a new block
 		if(token == "{") {
 			indentationCounter++;
 			indentation += "\t";
@@ -42,12 +46,14 @@ private:
 				indentation.erase(indentation.end() - 1);
 		}
 
+		// Writes a new line including the indentation space
 		if(!inDispatch && token == "{" || token == "}" || token == ";") {
 			outputFile << "\n" + indentation;
 		}
 		return indentation;
 	}
 
+	// Each child of a node of the parse tree calls this function to get its symbol written
 	template <class T> void writeChild(T *ctx) {
 		std::string token;
 		std::string nextToken;
@@ -58,9 +64,11 @@ private:
 		for(int i = 0; i < ctx->children.size(); i++) {
 			token = ctx->children[i]->getText();
 			nextToken = "";
+			// Saves the next token if it is a symbol
 			if (i+1 < ctx->children.size() && ctx->children[i+1]->children.size() == 0)
 				nextToken = ctx->children[i+1]->getText();
 
+			// Visits its children if it has a child
 			if (ctx->children[i]->children.size() > 0)
 				visit(ctx->children[i]);
 			else
@@ -77,7 +85,6 @@ public:
 	}
 
 	virtual std::any visitInitial(TELParser::InitialContext *ctx) override {
-		//std::cout<<ctx->toStringTree()<<std::endl;
 		tokenCounter++;
 		writeChild(ctx);
 		
@@ -105,10 +112,8 @@ public:
 	}
 
 	virtual std::any visitOnlyVarDecl(TELParser::OnlyVarDeclContext *ctx) override {
-		//indentationCounter++;
 		tokenCounter++;
 		writeChild(ctx);
-		//indentationCounter--;
 		return 0;
 	}
 
@@ -125,6 +130,7 @@ public:
 
 	virtual std::any visitStatement(TELParser::StatementContext *ctx) override {
 		tokenCounter++;
+		// Writes all locks
 		if(firstStatementEP) {
 			std::string indentation;
 			for(int i = 0; i < indentationCounter; i++)
@@ -139,7 +145,9 @@ public:
 		std::string indentation;
 		for(int i = 0; i < indentationCounter; i++)
 			indentation += "\t";
+		// If it is in a loop, the write of unlock is postponed until it leaves the loop's block
 		if(inLoopCounter == 0) {
+			// Writes the unlocks we have for that node
 			while(unlockVars.size() > 0) {
 				outputFile << "unlock(ctx." << unlockVars.back() << ");\n" << indentation;
 				unlockVars.pop_back();
@@ -179,10 +187,8 @@ public:
 	}
 
 	virtual std::any visitCurlyBrack(TELParser::CurlyBrackContext *ctx) override {
-		//indentationCounter++;
 		tokenCounter++;
 		writeChild(ctx);
-		//indentationCounter--;
 		return 0;
 	}
 
@@ -262,12 +268,16 @@ public:
 	}
 
 	virtual std::any visitIdentifier(TELParser::IdentifierContext *ctx) override {
+		// If it is in a process and it is accessing the context
 		if(inProcess && checkForLock){
 			if(ctx->ID(0)->toString() == "ctx") {
+				// The counter of tokens is varying, so we keep a range of token numbers we should look for
 				for(int i = tokenCounter; i >= tokenCounter - 5; i--) {
 					std::string ctxVar = ctx->ID(1)->toString();
 					std::vector tokenNum = EPUnlockLocations[currentEPName][ctxVar];
+					// Checks if the i is one of the token numbers that should be unlocked
 					if(currentEPName != "" && std::count(tokenNum.begin(), tokenNum.end(), i)) {
+						// Checks whether the variable is already in the unlock list
 						if(!std::count(unlockVars.begin(), unlockVars.end(), ctxVar))
 							unlockVars.push_back(ctxVar);
 						break;
@@ -283,9 +293,6 @@ public:
 	}
 
 	virtual std::any visitBuiltFunc(TELParser::BuiltFuncContext *ctx) override {
-		//for(int i = 0; i < ctx->children.size(); i++) {
-		//	outputFile << ctx->children[i]->getText() + "\n";
-		//}
 		tokenCounter++;
 		writeChild(ctx);
 		return 0;
